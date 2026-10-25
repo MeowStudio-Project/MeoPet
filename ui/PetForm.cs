@@ -44,7 +44,7 @@ namespace MeoPet
         private readonly SpeechContent _speechContent;
         private readonly CpuUsageMonitor _cpuUsageMonitor;
         private SettingsForm _settingsWindow;
-        private SpeechBubbleForm _speechBubble;
+        private readonly List<SpeechBubbleForm> _speechBubbles = new List<SpeechBubbleForm>();
         private readonly System.Windows.Forms.Timer _animationTimer;
         private readonly System.Windows.Forms.Timer _cpuTimer;
         private readonly System.Windows.Forms.Timer _chatTimer;
@@ -170,22 +170,26 @@ namespace MeoPet
         protected override void OnLocationChanged(EventArgs e)
         {
             base.OnLocationChanged(e);
-            if (_speechBubble != null && !_speechBubble.IsDisposed && _speechBubble.Visible)
+            foreach (SpeechBubbleForm bubble in _speechBubbles)
             {
-                _speechBubble.UpdatePosition(this);
+                if (!bubble.IsDisposed && bubble.Visible)
+                {
+                    bubble.UpdatePosition(this);
+                }
             }
         }
 
         private void ShowSpeech(string category)
         {
-            if (_speechBubble == null || _speechBubble.IsDisposed)
-            {
-                _speechBubble = new SpeechBubbleForm();
-            }
-
             SpeechLine line = _speechContent.GetRandomLine(category);
             SetExpression(line.Expression, 6000);
-            _speechBubble.ShowMessage(line.Text, this);
+            SpeechBubbleForm bubble = new SpeechBubbleForm();
+            bubble.FormClosed += delegate
+            {
+                _speechBubbles.Remove(bubble);
+            };
+            _speechBubbles.Add(bubble);
+            bubble.ShowMessage(line.Text, this);
             RenderSurface();
             if (category != "idle" && _chatTimer != null)
             {
@@ -200,12 +204,25 @@ namespace MeoPet
             _chatTimer.Stop();
             _chatTimer.Interval = _chatRandom.Next(35000, 70001);
             _chatTimer.Start();
-            if (_isDragging || (_speechBubble != null && _speechBubble.Visible))
+            if (_isDragging || HasVisibleSpeechBubbles())
             {
                 return;
             }
 
             ShowSpeech("idle");
+        }
+
+        private bool HasVisibleSpeechBubbles()
+        {
+            foreach (SpeechBubbleForm bubble in _speechBubbles)
+            {
+                if (!bubble.IsDisposed && bubble.Visible)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void SetExpression(string name, int durationMilliseconds)
@@ -845,7 +862,7 @@ namespace MeoPet
 
             if (_expressionUntil == DateTime.MinValue &&
                 DateTime.Now >= _nextAmbientExpressionAt &&
-                (_speechBubble == null || !_speechBubble.Visible))
+                !HasVisibleSpeechBubbles())
             {
                 string expression = _ambientExpressions[_chatRandom.Next(_ambientExpressions.Length)];
                 SetAmbientExpression(expression, _chatRandom.Next(1400, 3001));
@@ -1241,11 +1258,16 @@ namespace MeoPet
                     _cpuTimer.Dispose();
                 }
 
-                if (_speechBubble != null && !_speechBubble.IsDisposed)
+                foreach (SpeechBubbleForm bubble in _speechBubbles.ToArray())
                 {
-                    _speechBubble.Close();
-                    _speechBubble.Dispose();
+                    if (!bubble.IsDisposed)
+                    {
+                        bubble.Close();
+                        bubble.Dispose();
+                    }
                 }
+
+                _speechBubbles.Clear();
                 _surfaceGraphics.Dispose();
                 _surface.Dispose();
             }

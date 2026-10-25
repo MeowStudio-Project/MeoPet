@@ -41,7 +41,7 @@ namespace MeoPet
             _hideTimer.Tick += delegate
             {
                 _hideTimer.Stop();
-                Hide();
+                Close();
             };
         }
 

@@ -3,6 +3,8 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace MeoPet
@@ -109,6 +111,31 @@ namespace MeoPet
 
                 try
                 {
+                    CreateApplicationShortcut();
+                }
+                catch (InvalidOperationException ex)
+                {
+                    ShowError("無法建立 MeoPet 捷徑", ex.Message);
+                }
+                catch (IOException ex)
+                {
+                    ShowError("無法建立 MeoPet 捷徑", ex.Message);
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    ShowError("無法建立 MeoPet 捷徑", ex.Message);
+                }
+                catch (COMException ex)
+                {
+                    ShowError("無法建立 MeoPet 捷徑", ex.Message);
+                }
+                catch (TargetInvocationException ex)
+                {
+                    ShowError("無法建立 MeoPet 捷徑", ex.Message);
+                }
+
+                try
+                {
                     Process started = Process.Start(new ProcessStartInfo
                     {
                         FileName = Path.Combine(directory, "MeoPet.exe"),
@@ -132,6 +159,78 @@ namespace MeoPet
                 Close();
             };
             worker.RunWorkerAsync();
+        }
+
+        private void CreateApplicationShortcut()
+        {
+            using (FolderBrowserDialog dialog = new FolderBrowserDialog())
+            {
+                dialog.Description = "選擇要放置 MeoPet 捷徑的位置（預設為桌面）";
+                dialog.SelectedPath = Environment.GetFolderPath(
+                    Environment.SpecialFolder.DesktopDirectory);
+                dialog.ShowNewFolderButton = true;
+                if (dialog.ShowDialog(this) != DialogResult.OK)
+                {
+                    return;
+                }
+
+                string shortcutPath = Path.Combine(dialog.SelectedPath, "MeoPet.lnk");
+                Type shellType = Type.GetTypeFromProgID("WScript.Shell");
+                if (shellType == null)
+                {
+                    throw new InvalidOperationException("找不到 Windows 捷徑建立元件。");
+                }
+
+                object shell = null;
+                object shortcut = null;
+                try
+                {
+                    shell = Activator.CreateInstance(shellType);
+                    shortcut = shellType.InvokeMember(
+                        "CreateShortcut",
+                        BindingFlags.InvokeMethod,
+                        null,
+                        shell,
+                        new object[] { shortcutPath });
+                    Type shortcutType = shortcut.GetType();
+                    shortcutType.InvokeMember(
+                        "TargetPath",
+                        BindingFlags.SetProperty,
+                        null,
+                        shortcut,
+                        new object[] { Path.Combine(AppInstaller.GetInstallDirectory(), "MeoPet.exe") });
+                    shortcutType.InvokeMember(
+                        "WorkingDirectory",
+                        BindingFlags.SetProperty,
+                        null,
+                        shortcut,
+                        new object[] { AppInstaller.GetInstallDirectory() });
+                    shortcutType.InvokeMember(
+                        "IconLocation",
+                        BindingFlags.SetProperty,
+                        null,
+                        shortcut,
+                        new object[] { Path.Combine(AppInstaller.GetInstallDirectory(), "MeoPet.exe") + ",0" });
+                    shortcutType.InvokeMember(
+                        "Save",
+                        BindingFlags.InvokeMethod,
+                        null,
+                        shortcut,
+                        null);
+                }
+                finally
+                {
+                    if (shortcut != null && Marshal.IsComObject(shortcut))
+                    {
+                        Marshal.FinalReleaseComObject(shortcut);
+                    }
+
+                    if (shell != null && Marshal.IsComObject(shell))
+                    {
+                        Marshal.FinalReleaseComObject(shell);
+                    }
+                }
+            }
         }
 
         private void ShowError(string title, string details)
