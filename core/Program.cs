@@ -17,7 +17,7 @@ namespace MeoPet
 {
     internal static class Program
     {
-        public const string Version = "1.1.2";
+        public const string Version = "1.1.3";
 
         private static readonly string NameFile = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),

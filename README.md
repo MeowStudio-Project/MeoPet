@@ -1,19 +1,24 @@
 # MeoPet
 
-MeoPet is a small Windows desktop pet built with Windows Forms and .NET Framework 4.
+MeoPet 是以 Windows Forms 與 .NET Framework 4 製作的 Windows 桌面寵物。
 
-## Install
+## 安裝
 
-Download `MeoPet.Setup.exe` from the GitHub release and run it. The single-file installer downloads the matching release package and installs MeoPet under `%LOCALAPPDATA%\meopet`.
+從 GitHub Release 下載並執行 `MeoPet.Setup.exe`。
 
-The release ZIP contains only:
+- 若尚未安裝，安裝程式會下載最新版並安裝到 `%LOCALAPPDATA%\meopet`。
+- 若偵測到已有 `meopet` 資料夾，會詢問是否檢查更新。
+- 已安裝版本若為最新版，安裝程式會告知並啟動現有程式。
+- 更新時請先退出正在執行的 MeoPet。
+
+發布 ZIP 的根目錄必須包含：
 
 - `MeoPet.exe`
 - `ver.json`
 
-## Build
+## 建置
 
-Build the app with the .NET Framework C# compiler from the project root:
+在專案根目錄使用 .NET Framework C# 編譯器建置寵物程式：
 
 ```powershell
 $csc = "$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
@@ -31,7 +36,7 @@ $csc = "$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
   ui\PetForm.cs ui\SpeechBubbleForm.cs ui\SettingsForm.cs
 ```
 
-Build the standalone network installer from the project root:
+建置獨立的網路安裝程式：
 
 ```powershell
 & $csc /nologo /target:winexe /out:MeoPet.Setup.exe /win32icon:assets\app.ico `
@@ -41,18 +46,20 @@ Build the standalone network installer from the project root:
   setup\Setup.cs services\AppInstaller.cs services\UpdateService.cs
 ```
 
-## Publishing a release
+## 發布新版順序
 
-1. Build `MeoPet.exe` and `MeoPet.Setup.exe`.
-2. Create a ZIP with `MeoPet.exe` and `ver.json` at its root. Name it `MeoPet-<version>.zip`.
-3. Create a GitHub release using tag `v<version>` and upload the ZIP and `MeoPet.Setup.exe`.
-4. Publish `ver.json` to the default branch after the release assets are available. It provides the current version and the exact ZIP download URL used by the in-app updater and installer.
+1. 提高 `core\Program.cs` 的 `Program.Version`，並在本機以相同版本更新 `ver.json`。
+2. 建置 `MeoPet.exe` 與 `MeoPet.Setup.exe`。
+3. 建立 `MeoPet-<版本>.zip`，ZIP 根目錄只放 `MeoPet.exe` 和新版 `ver.json`。
+4. 將程式碼推送到 GitHub 預設分支，但先不要推送本機更新後的 `ver.json`；讓 GitHub 保留目前的舊版版本檔。
+5. 建立 `v<版本>` GitHub Release，上傳 `MeoPet-<版本>.zip` 與 `MeoPet.Setup.exe`，再發布 Release。
+6. 確認 ZIP 可下載後，再單獨提交並推送新版 `ver.json`，確認 `packageUrl` 與 Release 資產網址完全一致。
 
-`ver.json` format:
+`ver.json` 格式範例：
 
 ```json
 {
-  "version": "1.1.2",
-  "packageUrl": "https://github.com/MeowStudio-Project/MeoPet/releases/download/v1.1.2/MeoPet-1.1.2.zip"
+  "version": "1.1.3",
+  "packageUrl": "https://github.com/MeowStudio-Project/MeoPet/releases/download/v1.1.3/MeoPet-1.1.3.zip"
 }
 ```

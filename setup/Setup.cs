@@ -22,6 +22,7 @@ namespace MeoPet
     {
         private readonly Label _status;
         private readonly ProgressBar _progress;
+        private bool _existingInstall;
 
         public SetupForm()
         {
@@ -51,8 +52,27 @@ namespace MeoPet
 
         private void BeginInstall(object sender, EventArgs e)
         {
+            string installDirectory = AppInstaller.GetInstallDirectory();
+            _existingInstall = Directory.Exists(installDirectory);
+            if (_existingInstall)
+            {
+                DialogResult answer = MessageBox.Show(
+                    this,
+                    "檢測到您已安裝過 MeoPet，是否檢查更新？",
+                    "MeoPet 安裝程式",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question);
+                if (answer != DialogResult.Yes)
+                {
+                    Close();
+                    return;
+                }
+
+                _status.Text = "正在檢查更新...";
+            }
+
             BackgroundWorker worker = new BackgroundWorker();
-            worker.DoWork += delegate
+            worker.DoWork += delegate(object workerSender, DoWorkEventArgs workerEvent)
             {
                 Process[] running = Process.GetProcessesByName("MeoPet");
                 if (running.Length > 0)
@@ -61,17 +81,31 @@ namespace MeoPet
                         "請先退出正在執行的 MeoPet，再重新執行安裝程式。");
                 }
 
-                string stagedDirectory = UpdateService.DownloadLatestPackage();
+                string installedExecutable = Path.Combine(installDirectory, "MeoPet.exe");
+                string installedManifest = Path.Combine(installDirectory, "ver.json");
+                string stagedDirectory = _existingInstall &&
+                    File.Exists(installedExecutable) &&
+                    File.Exists(installedManifest)
+                    ? UpdateService.DownloadUpdateIfAvailable(installDirectory)
+                    : UpdateService.DownloadLatestPackage();
+                if (stagedDirectory == null)
+                {
+                    workerEvent.Result = false;
+                    return;
+                }
+
                 try
                 {
                     UpdateService.InstallStagedPackage(
                         stagedDirectory,
-                        AppInstaller.GetInstallDirectory());
+                        installDirectory);
                 }
                 finally
                 {
                     UpdateService.CleanupStaging(stagedDirectory);
                 }
+
+                workerEvent.Result = true;
             };
             worker.RunWorkerCompleted += delegate(object workerSender, RunWorkerCompletedEventArgs workerEvent)
             {
@@ -86,6 +120,16 @@ namespace MeoPet
                         MessageBoxIcon.Error);
                     Close();
                     return;
+                }
+
+                if (_existingInstall && workerEvent.Result is bool && !(bool)workerEvent.Result)
+                {
+                    MessageBox.Show(
+                        this,
+                        "目前已是最新版。",
+                        "MeoPet 安裝程式",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information);
                 }
 
                 try
