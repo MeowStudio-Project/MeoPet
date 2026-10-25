@@ -1,0 +1,61 @@
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{B13D5938-D47D-4DA6-BA9D-51D4CC8BE481}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>MeoPet</RootNamespace>
+    <AssemblyName>MeoPet</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <LangVersion>7.3</LangVersion>
+    <ApplicationIcon>assets\app.ico</ApplicationIcon>
+    <StartupObject>MeoPet.Program</StartupObject>
+    <OutputPath>bin\$(Configuration)\</OutputPath>
+    <DebugSymbols>false</DebugSymbols>
+    <Optimize>true</Optimize>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Web.Extensions" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="core\Program.cs" />
+    <Compile Include="models\PetSettings.cs" />
+    <Compile Include="services\AppInstaller.cs" />
+    <Compile Include="services\CpuUsageMonitor.cs" />
+    <Compile Include="services\PetStorage.cs" />
+    <Compile Include="services\SpeechContent.cs" />
+    <Compile Include="services\StartupSettings.cs" />
+    <Compile Include="services\UpdateService.cs" />
+    <Compile Include="ui\NameDialog.cs" />
+    <Compile Include="ui\PetForm.cs" />
+    <Compile Include="ui\SpeechBubbleForm.cs" />
+    <Compile Include="ui\SettingsForm.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="assets\app.ico" />
+    <Content Include="assets\app.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="data\expressions.json">
+      <LogicalName>MeoPet.data.expressions.json</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="data\speech.json">
+      <LogicalName>MeoPet.data.speech.json</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ver.json">
+      <LogicalName>MeoPet.ver.json</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="assets\app.png">
+      <LogicalName>MeoPet.assets.app.png</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

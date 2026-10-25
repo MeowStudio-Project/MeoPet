@@ -1,0 +1,71 @@
+{
+  "greeting": [
+    { "Text": "嗨！", "Expression": "happy" }
+  ],
+  "dizzy": [
+    { "Text": "我好暈喔....", "Expression": "dizzy" },
+    { "Text": "等等！我的臉還在原地嗎？", "Expression": "dizzy" },
+    { "Text": "停一下，我要把眼睛轉回來！", "Expression": "dizzy" },
+    { "Text": "再拖下去，我要看到三個你了！", "Expression": "dizzy" }
+  ],
+  "cpu": [
+    { "Text": "你在做甚麼?你的電腦CPU要爆了阿阿阿!!", "Expression": "cpu" },
+    { "Text": "風扇呼呼叫耶！要不要讓電腦喘口氣？", "Expression": "cpu" },
+    { "Text": "我感覺到桌子在震動了！", "Expression": "cpu" }
+  ],
+  "click": [
+    { "Text": "嘿嘿，有人在找我玩嗎？", "Expression": "happy" },
+    { "Text": "戳到我啦！", "Expression": "surprised" },
+    { "Text": "再摸摸頭嘛～", "Expression": "shy" },
+    { "Text": "那裡是我的癢癢肉！", "Expression": "laughing" },
+    { "Text": "我有乖乖待在這裡喔！", "Expression": "proud" },
+    { "Text": "你猜我剛剛在想什麼？", "Expression": "curious" },
+    { "Text": "今天也一起玩一下嘛！", "Expression": "playful" },
+    { "Text": "嗯？你叫我嗎？", "Expression": "curious" },
+    { "Text": "被你發現我在發呆了。", "Expression": "sleepy" },
+    { "Text": "我也要戳回去！", "Expression": "mischievous" },
+    { "Text": "今天的你看起來很忙呢。", "Expression": "thoughtful" },
+    { "Text": "我可以陪你喔。", "Expression": "warm" },
+    { "Text": "欸嘿，又來找我玩啦？", "Expression": "happy" },
+    { "Text": "我剛剛是不是晃了一下？", "Expression": "surprised" },
+    { "Text": "摸摸頭就有精神了！", "Expression": "excited" },
+    { "Text": "你手指頭今天很忙喔。", "Expression": "mischievous" },
+    { "Text": "再一下下就好嘛～", "Expression": "playful" },
+    { "Text": "我有感覺到喔，嘿嘿。", "Expression": "shy" }
+  ],
+  "angry": [
+    { "Text": "你一直點我欸!", "Expression": "angry" }
+  ],
+  "idle": [
+    { "Text": "欸，你現在在忙什麼呀？", "Expression": "curious" },
+    { "Text": "讓我看看你在做甚麼....", "Expression": "curious" },
+    { "Text": "我剛剛想到一件事……算了，忘記了。", "Expression": "thinking" },
+    { "Text": "你今天還好嗎？我在這裡陪你。", "Expression": "warm" },
+    { "Text": "我有努力當一顆乖球喔！", "Expression": "proud" },
+    { "Text": "你是不是又在看有趣的東西？", "Expression": "curious" },
+    { "Text": "呼～這裡好舒服。", "Expression": "relaxed" },
+    { "Text": "我剛剛差點睡著了！才沒有偷懶。", "Expression": "sleepy" },
+    { "Text": "陪我一下嘛，我一個球有點無聊。", "Expression": "lonely" },
+    { "Text": "今天也辛苦啦，休息一下吧。", "Expression": "warm" },
+    { "Text": "嘿嘿，我剛剛有在看你喔。", "Expression": "mischievous" },
+    { "Text": "如果我會滾來滾去就好了！", "Expression": "dreamy" },
+    { "Text": "你有沒有聽到？好像有零食的聲音！", "Expression": "excited" },
+    { "Text": "我想曬一下太陽……室內也可以啦。", "Expression": "relaxed" },
+    { "Text": "你要不要伸個懶腰？我陪你。", "Expression": "happy" },
+    { "Text": "嗯……我現在是認真思考的球。", "Expression": "thinking" },
+    { "Text": "你忙你的，我就在旁邊待著。", "Expression": "warm" },
+    { "Text": "欸嘿，被你發現我在看你了！", "Expression": "shy" },
+    { "Text": "我的願望是吃一口餅乾！", "Expression": "dreamy" },
+    { "Text": "今天的空氣有一點點好聞。", "Expression": "relaxed" },
+    { "Text": "剛剛那個聲音是什麼？我差點滾過去看。", "Expression": "curious" },
+    { "Text": "我覺得現在這個位置剛剛好。", "Expression": "relaxed" },
+    { "Text": "你有沒有看到我剛剛努力保持平衡？", "Expression": "proud" },
+    { "Text": "我今天很乖吧？快說有。", "Expression": "playful" },
+    { "Text": "啊，差點忘了跟你打招呼！嗨～", "Expression": "happy" },
+    { "Text": "如果我會說夢話，大概會說餅乾。", "Expression": "dreamy" },
+    { "Text": "你忙完再陪我就好，我等你。", "Expression": "warm" },
+    { "Text": "剛剛是不是有人經過？喔，是你呀。", "Expression": "surprised" },
+    { "Text": "我在練習當一顆不亂滾的球。", "Expression": "thinking" },
+    { "Text": "這邊看出去好像比較有趣。", "Expression": "curious" }
+  ]
+}
