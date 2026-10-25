@@ -5,6 +5,7 @@ using System.Drawing;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Security;
 using System.Windows.Forms;
 
 namespace MeoPet
@@ -44,7 +45,8 @@ namespace MeoPet
         private void Install(object sender, EventArgs e)
         {
             string directory = AppInstaller.GetInstallDirectory();
-            bool alreadyInstalled = Directory.Exists(directory);
+            string executable = Path.Combine(directory, "MeoPet.exe");
+            bool alreadyInstalled = File.Exists(executable);
             if (alreadyInstalled &&
                 MessageBox.Show(
                     this,
@@ -67,7 +69,6 @@ namespace MeoPet
                         "請先退出正在執行的 MeoPet，再重新執行安裝程式。");
                 }
 
-                string executable = Path.Combine(directory, "MeoPet.exe");
                 string manifest = Path.Combine(directory, "ver.json");
                 string package = alreadyInstalled && File.Exists(executable) && File.Exists(manifest)
                     ? UpdateService.DownloadUpdateIfAvailable(directory)
@@ -122,6 +123,10 @@ namespace MeoPet
                     ShowError("無法建立 MeoPet 捷徑", ex.Message);
                 }
                 catch (UnauthorizedAccessException ex)
+                {
+                    ShowError("無法建立 MeoPet 捷徑", ex.Message);
+                }
+                catch (SecurityException ex)
                 {
                     ShowError("無法建立 MeoPet 捷徑", ex.Message);
                 }
@@ -217,6 +222,9 @@ namespace MeoPet
                         null,
                         shortcut,
                         null);
+                    File.WriteAllText(
+                        Path.Combine(AppInstaller.GetInstallDirectory(), "shortcut-location.txt"),
+                        shortcutPath);
                 }
                 finally
                 {

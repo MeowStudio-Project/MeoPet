@@ -6,12 +6,13 @@
     { "Text": "我好暈喔....", "Expression": "dizzy" },
     { "Text": "等等！我的臉還在原地嗎？", "Expression": "dizzy" },
     { "Text": "停一下，我要把眼睛轉回來！", "Expression": "dizzy" },
-    { "Text": "再拖下去，我要看到三個你了！", "Expression": "dizzy" }
+    { "Text": "再拖下去，我要看到三個你了！", "Expression": "dizzy" },
+    { "Text": "我快不行了啦！", "Expression": "dizzy" }
   ],
   "cpu": [
     { "Text": "你在做甚麼?你的電腦CPU要爆了阿阿阿!!", "Expression": "cpu" },
     { "Text": "風扇呼呼叫耶！要不要讓電腦喘口氣？", "Expression": "cpu" },
-    { "Text": "我感覺到桌子在震動了！", "Expression": "cpu" }
+    { "Text": "我感覺到桌子在熱熱的！", "Expression": "cpu" }
   ],
   "click": [
     { "Text": "嘿嘿，有人在找我玩嗎？", "Expression": "happy" },

@@ -47,7 +47,19 @@ namespace MeoPet
                 {
                     ShowRemovalError(ex.Message);
                 }
+                catch (SecurityException ex)
+                {
+                    ShowRemovalError(ex.Message);
+                }
                 catch (InvalidDataException ex)
+                {
+                    ShowRemovalError(ex.Message);
+                }
+                catch (COMException ex)
+                {
+                    ShowRemovalError(ex.Message);
+                }
+                catch (System.Reflection.TargetInvocationException ex)
                 {
                     ShowRemovalError(ex.Message);
                 }
@@ -56,6 +68,10 @@ namespace MeoPet
                     ShowRemovalError(ex.Message);
                 }
                 catch (InvalidOperationException ex)
+                {
+                    ShowRemovalError(ex.Message);
+                }
+                catch (ArgumentException ex)
                 {
                     ShowRemovalError(ex.Message);
                 }

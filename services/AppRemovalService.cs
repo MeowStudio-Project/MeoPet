@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -55,10 +56,93 @@ namespace MeoPet
                     throw new TimeoutException("等待 MeoPet 關閉逾時，無法刪除應用。");
                 }
 
+                RemoveShortcut(installDirectory);
                 MoveToRecycleBin(installDirectory);
+                if (Directory.Exists(installDirectory))
+                {
+                    throw new IOException("MeoPet 資料夾仍存在，未能完成移除。");
+                }
             }
 
             ScheduleHelperCleanup(helperDirectory);
+        }
+
+        private static void RemoveShortcut(string installDirectory)
+        {
+            string shortcutRecord = Path.Combine(installDirectory, "shortcut-location.txt");
+            string shortcutPath = File.Exists(shortcutRecord)
+                ? File.ReadAllText(shortcutRecord).Trim()
+                : String.Empty;
+            if (shortcutPath.Length == 0)
+            {
+                shortcutPath = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
+                    "MeoPet.lnk");
+            }
+
+            if (shortcutPath.Length == 0 || !File.Exists(shortcutPath))
+            {
+                return;
+            }
+
+            if (!Path.IsPathRooted(shortcutPath) ||
+                !String.Equals(Path.GetExtension(shortcutPath), ".lnk", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidDataException("MeoPet 捷徑路徑無效，未刪除任何捷徑。");
+            }
+
+            Type shellType = Type.GetTypeFromProgID("WScript.Shell");
+            if (shellType == null)
+            {
+                throw new InvalidOperationException("找不到 Windows 捷徑元件，未刪除任何捷徑。");
+            }
+
+            object shell = null;
+            object shortcut = null;
+            try
+            {
+                shell = Activator.CreateInstance(shellType);
+                shortcut = shellType.InvokeMember(
+                    "CreateShortcut",
+                    BindingFlags.InvokeMethod,
+                    null,
+                    shell,
+                    new object[] { shortcutPath });
+                object targetValue = shortcut.GetType().InvokeMember(
+                    "TargetPath",
+                    BindingFlags.GetProperty,
+                    null,
+                    shortcut,
+                    null);
+                string targetPath = targetValue as string;
+                string expectedTarget = Path.Combine(installDirectory, "MeoPet.exe");
+                if (String.IsNullOrWhiteSpace(targetPath) ||
+                    !String.Equals(
+                        Path.GetFullPath(targetPath),
+                        Path.GetFullPath(expectedTarget),
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidDataException("捷徑目標不是 MeoPet，未刪除任何捷徑。");
+                }
+            }
+            finally
+            {
+                if (shortcut != null && Marshal.IsComObject(shortcut))
+                {
+                    Marshal.FinalReleaseComObject(shortcut);
+                }
+
+                if (shell != null && Marshal.IsComObject(shell))
+                {
+                    Marshal.FinalReleaseComObject(shell);
+                }
+            }
+
+            File.Delete(shortcutPath);
+            if (File.Exists(shortcutPath))
+            {
+                throw new IOException("無法刪除 MeoPet 捷徑。");
+            }
         }
 
         private static void MoveToRecycleBin(string installDirectory)

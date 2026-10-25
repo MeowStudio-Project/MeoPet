@@ -48,6 +48,7 @@ namespace MeoPet
         private readonly System.Windows.Forms.Timer _animationTimer;
         private readonly System.Windows.Forms.Timer _cpuTimer;
         private readonly System.Windows.Forms.Timer _chatTimer;
+        private readonly System.Windows.Forms.Timer _deferredAmbientTimer;
         private readonly Random _chatRandom = new Random();
         private readonly Queue<ShakeSample> _shakeSamples = new Queue<ShakeSample>();
         private readonly Queue<DateTime> _shakeReversals = new Queue<DateTime>();
@@ -75,6 +76,8 @@ namespace MeoPet
         private DateTime _expressionUntil;
         private DateTime _nextAmbientExpressionAt;
         private DateTime _nextSqueezeSpeechAt;
+        private bool _pendingIdleSpeech;
+        private bool _pendingCpuSpeech;
         private bool _cpuWarningArmed = true;
 
         public PetForm(
@@ -147,6 +150,10 @@ namespace MeoPet
             _chatTimer.Interval = 45000;
             _chatTimer.Tick += StartCasualChat;
             _chatTimer.Start();
+
+            _deferredAmbientTimer = new System.Windows.Forms.Timer();
+            _deferredAmbientTimer.Interval = 250;
+            _deferredAmbientTimer.Tick += ShowDeferredAmbientSpeech;
         }
 
         protected override CreateParams CreateParams
@@ -187,6 +194,10 @@ namespace MeoPet
             bubble.FormClosed += delegate
             {
                 _speechBubbles.Remove(bubble);
+                if (_pendingIdleSpeech || _pendingCpuSpeech)
+                {
+                    _deferredAmbientTimer.Start();
+                }
             };
             _speechBubbles.Add(bubble);
             bubble.ShowMessage(line.Text, this);
@@ -206,10 +217,43 @@ namespace MeoPet
             _chatTimer.Start();
             if (_isDragging || HasVisibleSpeechBubbles())
             {
+                _pendingIdleSpeech = true;
+                _deferredAmbientTimer.Start();
                 return;
             }
 
             ShowSpeech("idle");
+        }
+
+        private void ShowDeferredAmbientSpeech(object sender, EventArgs e)
+        {
+            if (!_pendingIdleSpeech && !_pendingCpuSpeech)
+            {
+                _deferredAmbientTimer.Stop();
+                return;
+            }
+
+            if (_isDragging || HasVisibleSpeechBubbles())
+            {
+                return;
+            }
+
+            _deferredAmbientTimer.Stop();
+            if (_pendingCpuSpeech)
+            {
+                _pendingCpuSpeech = false;
+                ShowSpeech("cpu");
+            }
+            else
+            {
+                _pendingIdleSpeech = false;
+                ShowSpeech("idle");
+            }
+
+            if (_pendingIdleSpeech || _pendingCpuSpeech)
+            {
+                _deferredAmbientTimer.Start();
+            }
         }
 
         private bool HasVisibleSpeechBubbles()
@@ -248,8 +292,16 @@ namespace MeoPet
                 else if (usage > 90F && _cpuWarningArmed)
                 {
                     _cpuWarningArmed = false;
-                    ShowSpeech("cpu");
-                    RenderSurface();
+                    if (_isDragging || HasVisibleSpeechBubbles())
+                    {
+                        _pendingCpuSpeech = true;
+                        _deferredAmbientTimer.Start();
+                    }
+                    else
+                    {
+                        ShowSpeech("cpu");
+                        RenderSurface();
+                    }
                 }
             }
             catch (Win32Exception ex)
@@ -1256,6 +1308,12 @@ namespace MeoPet
                 {
                     _cpuTimer.Stop();
                     _cpuTimer.Dispose();
+                }
+
+                if (_deferredAmbientTimer != null)
+                {
+                    _deferredAmbientTimer.Stop();
+                    _deferredAmbientTimer.Dispose();
                 }
 
                 foreach (SpeechBubbleForm bubble in _speechBubbles.ToArray())
