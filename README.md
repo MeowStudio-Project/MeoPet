@@ -1,6 +1,6 @@
 # MeoPet
 
-MeoPet 是以 Windows Forms 與 .NET Framework 4 製作的 Windows 桌面寵物。
+MeoPet 是以 Windows Forms 與 .NET Framework 4 製作的 Windows 小桌面寵物。
 
 ## 安裝
 
