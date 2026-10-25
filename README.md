@@ -59,7 +59,7 @@ $csc = "$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
 
 ```json
 {
-  "version": "1.1.3",
-  "packageUrl": "https://github.com/MeowStudio-Project/MeoPet/releases/download/v1.1.3/MeoPet-1.1.3.zip"
+  "version": "1.1.4",
+  "packageUrl": "https://github.com/MeowStudio-Project/MeoPet/releases/download/v1.1.4/MeoPet-1.1.4.zip"
 }
 ```

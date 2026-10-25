@@ -20,109 +20,84 @@ namespace MeoPet
 
     internal sealed class SetupForm : Form
     {
-        private readonly Label _status;
-        private readonly ProgressBar _progress;
-        private bool _existingInstall;
+        private readonly Label _status = new Label();
+        private readonly ProgressBar _progress = new ProgressBar();
 
         public SetupForm()
         {
             Text = "安裝 MeoPet";
             ClientSize = new Size(390, 125);
             FormBorderStyle = FormBorderStyle.FixedDialog;
-            MaximizeBox = false;
-            MinimizeBox = false;
-            ShowInTaskbar = true;
+            MaximizeBox = MinimizeBox = false;
             StartPosition = FormStartPosition.CenterScreen;
             Font = new Font("Microsoft JhengHei UI", 9F);
 
-            _status = new Label();
-            _status.Location = new Point(22, 20);
-            _status.Size = new Size(346, 28);
-            _status.Text = "正在連線並下載 MeoPet...";
-            Controls.Add(_status);
-
-            _progress = new ProgressBar();
-            _progress.Location = new Point(22, 60);
-            _progress.Size = new Size(346, 20);
+            _status.SetBounds(22, 20, 346, 28);
+            _progress.SetBounds(22, 60, 346, 20);
             _progress.Style = ProgressBarStyle.Marquee;
-            Controls.Add(_progress);
-
-            Shown += BeginInstall;
+            Controls.AddRange(new Control[] { _status, _progress });
+            Shown += Install;
         }
 
-        private void BeginInstall(object sender, EventArgs e)
+        private void Install(object sender, EventArgs e)
         {
-            string installDirectory = AppInstaller.GetInstallDirectory();
-            _existingInstall = Directory.Exists(installDirectory);
-            if (_existingInstall)
-            {
-                DialogResult answer = MessageBox.Show(
+            string directory = AppInstaller.GetInstallDirectory();
+            bool alreadyInstalled = Directory.Exists(directory);
+            if (alreadyInstalled &&
+                MessageBox.Show(
                     this,
                     "檢測到您已安裝過 MeoPet，是否檢查更新？",
                     "MeoPet 安裝程式",
                     MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Question);
-                if (answer != DialogResult.Yes)
-                {
-                    Close();
-                    return;
-                }
-
-                _status.Text = "正在檢查更新...";
+                    MessageBoxIcon.Question) != DialogResult.Yes)
+            {
+                Close();
+                return;
             }
 
+            _status.Text = alreadyInstalled ? "正在檢查更新..." : "正在下載並安裝 MeoPet...";
             BackgroundWorker worker = new BackgroundWorker();
-            worker.DoWork += delegate(object workerSender, DoWorkEventArgs workerEvent)
+            worker.DoWork += delegate(object source, DoWorkEventArgs args)
             {
-                Process[] running = Process.GetProcessesByName("MeoPet");
-                if (running.Length > 0)
+                if (Process.GetProcessesByName("MeoPet").Length > 0)
                 {
                     throw new InvalidOperationException(
                         "請先退出正在執行的 MeoPet，再重新執行安裝程式。");
                 }
 
-                string installedExecutable = Path.Combine(installDirectory, "MeoPet.exe");
-                string installedManifest = Path.Combine(installDirectory, "ver.json");
-                string stagedDirectory = _existingInstall &&
-                    File.Exists(installedExecutable) &&
-                    File.Exists(installedManifest)
-                    ? UpdateService.DownloadUpdateIfAvailable(installDirectory)
+                string executable = Path.Combine(directory, "MeoPet.exe");
+                string manifest = Path.Combine(directory, "ver.json");
+                string package = alreadyInstalled && File.Exists(executable) && File.Exists(manifest)
+                    ? UpdateService.DownloadUpdateIfAvailable(directory)
                     : UpdateService.DownloadLatestPackage();
-                if (stagedDirectory == null)
+
+                if (package == null)
                 {
-                    workerEvent.Result = false;
+                    args.Result = false;
                     return;
                 }
 
                 try
                 {
-                    UpdateService.InstallStagedPackage(
-                        stagedDirectory,
-                        installDirectory);
+                    UpdateService.InstallStagedPackage(package, directory);
+                    args.Result = true;
                 }
                 finally
                 {
-                    UpdateService.CleanupStaging(stagedDirectory);
+                    UpdateService.CleanupStaging(package);
                 }
-
-                workerEvent.Result = true;
             };
-            worker.RunWorkerCompleted += delegate(object workerSender, RunWorkerCompletedEventArgs workerEvent)
+            worker.RunWorkerCompleted += delegate(object source, RunWorkerCompletedEventArgs args)
             {
                 worker.Dispose();
-                if (workerEvent.Error != null)
+                if (args.Error != null)
                 {
-                    MessageBox.Show(
-                        this,
-                        "安裝 MeoPet 失敗：" + Environment.NewLine + workerEvent.Error.Message,
-                        "MeoPet 安裝程式",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error);
+                    ShowError("安裝 MeoPet 失敗", args.Error.Message);
                     Close();
                     return;
                 }
 
-                if (_existingInstall && workerEvent.Result is bool && !(bool)workerEvent.Result)
+                if (alreadyInstalled && args.Result is bool && !(bool)args.Result)
                 {
                     MessageBox.Show(
                         this,
@@ -134,24 +109,24 @@ namespace MeoPet
 
                 try
                 {
-                    ProcessStartInfo startInfo = new ProcessStartInfo();
-                    startInfo.FileName = Path.Combine(
-                        AppInstaller.GetInstallDirectory(),
-                        "MeoPet.exe");
-                    startInfo.WorkingDirectory = AppInstaller.GetInstallDirectory();
-                    startInfo.UseShellExecute = true;
-                    if (Process.Start(startInfo) == null)
+                    Process started = Process.Start(new ProcessStartInfo
+                    {
+                        FileName = Path.Combine(directory, "MeoPet.exe"),
+                        WorkingDirectory = directory,
+                        UseShellExecute = true
+                    });
+                    if (started == null)
                     {
                         throw new InvalidOperationException("MeoPet 沒有成功啟動。");
                     }
                 }
                 catch (InvalidOperationException ex)
                 {
-                    ShowLaunchError(ex.Message);
+                    ShowError("已安裝，但無法啟動 MeoPet", ex.Message);
                 }
-                catch (System.ComponentModel.Win32Exception ex)
+                catch (Win32Exception ex)
                 {
-                    ShowLaunchError(ex.Message);
+                    ShowError("已安裝，但無法啟動 MeoPet", ex.Message);
                 }
 
                 Close();
@@ -159,11 +134,11 @@ namespace MeoPet
             worker.RunWorkerAsync();
         }
 
-        private void ShowLaunchError(string details)
+        private void ShowError(string title, string details)
         {
             MessageBox.Show(
                 this,
-                "已安裝，但無法自動啟動 MeoPet：" + Environment.NewLine + details,
+                title + ":" + Environment.NewLine + details,
                 "MeoPet 安裝程式",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Error);
