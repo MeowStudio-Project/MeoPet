@@ -10,6 +10,8 @@ MeoPet 是以 Windows Forms 與 .NET Framework 4 製作的 Windows 小桌面寵�
 - 若偵測到已有 `meopet` 資料夾，會詢問是否檢查更新。
 - 已安裝版本若為最新版，安裝程式會告知並啟動現有程式。
 - 更新時請先退出正在執行的 MeoPet。
+- 設定中的「清空資料」會清除寵物名字與偏好設定，但保留程式。
+- 「刪除應用」會在退出後將 `%LOCALAPPDATA%\meopet` 移至資源回收筒。
 
 發布 ZIP 的根目錄必須包含：
 
@@ -30,7 +32,7 @@ $csc = "$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
   /resource:data\expressions.json,MeoPet.data.expressions.json `
   /resource:assets\app.png,MeoPet.assets.app.png `
   /resource:ver.json,MeoPet.ver.json `
-  core\Program.cs models\PetSettings.cs services\AppInstaller.cs `
+  core\Program.cs models\PetSettings.cs services\AppInstaller.cs services\AppRemovalService.cs `
   services\CpuUsageMonitor.cs services\PetStorage.cs services\SpeechContent.cs `
   services\StartupSettings.cs services\UpdateService.cs ui\NameDialog.cs `
   ui\PetForm.cs ui\SpeechBubbleForm.cs ui\SettingsForm.cs

@@ -36,6 +36,13 @@
   "angry": [
     { "Text": "你一直點我欸!", "Expression": "angry" }
   ],
+  "squeeze": [
+    { "Text": "欸欸，我被擠扁了啦！", "Expression": "surprised" },
+    { "Text": "貼著邊邊好擠喔～", "Expression": "worried" },
+    { "Text": "救命，我變成方形的感覺了！", "Expression": "worried" },
+    { "Text": "嘿！再推一下我就要彈回去囉！", "Expression": "playful" },
+    { "Text": "這個角落也太擠了吧！", "Expression": "surprised" }
+  ],
   "idle": [
     { "Text": "欸，你現在在忙什麼呀？", "Expression": "curious" },
     { "Text": "讓我看看你在做甚麼....", "Expression": "curious" },

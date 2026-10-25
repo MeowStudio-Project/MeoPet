@@ -89,7 +89,10 @@ namespace MeoPet
             IDictionary<string, SpeechLine[]> speech,
             IDictionary<string, string> expressions)
         {
-            string[] categories = { "greeting", "dizzy", "cpu", "click", "angry", "idle" };
+            string[] categories =
+            {
+                "greeting", "dizzy", "cpu", "click", "angry", "idle", "squeeze"
+            };
             for (int i = 0; i < categories.Length; i++)
             {
                 SpeechLine[] lines;

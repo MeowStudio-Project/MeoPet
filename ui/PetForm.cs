@@ -74,6 +74,7 @@ namespace MeoPet
         private string _faceExpression;
         private DateTime _expressionUntil;
         private DateTime _nextAmbientExpressionAt;
+        private DateTime _nextSqueezeSpeechAt;
         private bool _cpuWarningArmed = true;
 
         public PetForm(
@@ -660,6 +661,7 @@ namespace MeoPet
             _isDragging = true;
             _dizzyTriggered = false;
             _dragDistance = 0D;
+            _squeezeEdges = SqueezeEdges.None;
             _dragOffset = e.Location;
             _lastPointer = Cursor.Position;
             _shakeAnchor = _lastPointer;
@@ -694,7 +696,16 @@ namespace MeoPet
             x = Math.Max(screen.Left - 25, Math.Min(screen.Right - Width + 25, x));
             y = Math.Max(screen.Top - 25, Math.Min(screen.Bottom - Height + 25, y));
             Location = new Point(x, y);
+            SqueezeEdges previousSqueezeEdges = _squeezeEdges;
             _squeezeEdges = _settings.SqueezeAtEdge ? DetectSqueezeEdges(screen) : SqueezeEdges.None;
+            if (previousSqueezeEdges == SqueezeEdges.None &&
+                _squeezeEdges != SqueezeEdges.None &&
+                DateTime.Now >= _nextSqueezeSpeechAt)
+            {
+                _nextSqueezeSpeechAt = DateTime.Now.AddSeconds(5);
+                ShowSpeech("squeeze");
+            }
+
             if (!_dizzyTriggered && IsVigorousShake())
             {
                 _dizzyTriggered = true;
@@ -880,7 +891,8 @@ namespace MeoPet
                 _settingsWindow = new SettingsForm(
                     _settings,
                     ApplySettings,
-                    UninstallApplication,
+                    ClearApplicationData,
+                    DeleteApplication,
                     DownloadUpdate,
                     StartUpdate);
             }
@@ -993,53 +1005,135 @@ namespace MeoPet
             return false;
         }
 
-        private bool UninstallApplication()
+        private bool ClearApplicationData()
         {
-            string installDirectory = Path.GetFullPath(AppInstaller.GetInstallDirectory());
-            string expectedDirectory = Path.GetFullPath(
-                Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "meopet"));
-
-            if (!String.Equals(installDirectory, expectedDirectory, StringComparison.OrdinalIgnoreCase))
-            {
-                ShowSettingsError("無法卸載應用", "卸載路徑驗證失敗，未刪除任何檔案。");
-                return false;
-            }
-
             try
             {
                 StartupSettings.SetEnabled(false);
+                File.Delete(_nameFile);
+                File.Delete(_settingsFile);
+                _petName = String.Empty;
+                _settings = new PetSettings();
 
-                ProcessStartInfo cleanup = new ProcessStartInfo();
-                cleanup.FileName = Path.Combine(Environment.SystemDirectory, "cmd.exe");
-                cleanup.Arguments =
-                    "/d /c ping 127.0.0.1 -n 4 > nul & rd /s /q \"" +
-                    installDirectory +
-                    "\"";
-                cleanup.CreateNoWindow = true;
-                cleanup.UseShellExecute = false;
-                cleanup.WindowStyle = ProcessWindowStyle.Hidden;
-                Process.Start(cleanup);
+                Point center = new Point(Left + Width / 2, Top + Height / 2);
+                CreateSurface();
+                Location = new Point(center.X - Width / 2, center.Y - Height / 2);
+                RenderSurface();
+                return true;
+            }
+            catch (IOException ex)
+            {
+                ShowSettingsError("無法清空資料", ex.Message);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                ShowSettingsError("沒有權限清空資料", ex.Message);
+            }
+            catch (SecurityException ex)
+            {
+                ShowSettingsError("沒有權限清空資料", ex.Message);
+            }
 
+            return false;
+        }
+
+        private bool DeleteApplication()
+        {
+            string installDirectory = Path.GetFullPath(AppInstaller.GetInstallDirectory());
+            string helperDirectory = Path.Combine(
+                Path.GetTempPath(),
+                "MeoPet-remove-" + Guid.NewGuid().ToString("N"));
+            bool startupDisabled = false;
+            bool helperStarted = false;
+
+            try
+            {
+                if (!String.Equals(
+                    installDirectory.TrimEnd(Path.DirectorySeparatorChar),
+                    Path.GetFullPath(Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                        "meopet")).TrimEnd(Path.DirectorySeparatorChar),
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    ShowSettingsError("無法刪除應用", "刪除路徑驗證失敗，未移動任何檔案。");
+                    return false;
+                }
+
+                StartupSettings.SetEnabled(false);
+                startupDisabled = true;
+                Directory.CreateDirectory(helperDirectory);
+                string helperExecutable = Path.Combine(helperDirectory, "MeoPetRemoval.exe");
+                File.Copy(Application.ExecutablePath, helperExecutable);
+
+                ProcessStartInfo removal = new ProcessStartInfo();
+                removal.FileName = helperExecutable;
+                removal.Arguments = "--remove-app \"" + installDirectory + "\" \"" + helperDirectory + "\"";
+                removal.WorkingDirectory = helperDirectory;
+                removal.UseShellExecute = true;
+                if (Process.Start(removal) == null)
+                {
+                    throw new InvalidOperationException("刪除輔助程序沒有成功啟動。");
+                }
+
+                helperStarted = true;
                 BeginInvoke((MethodInvoker)delegate { Application.Exit(); });
                 return true;
             }
             catch (IOException ex)
             {
-                ShowSettingsError("無法卸載應用", ex.Message);
+                ShowSettingsError("無法刪除應用", ex.Message);
             }
             catch (UnauthorizedAccessException ex)
             {
-                ShowSettingsError("沒有權限卸載應用", ex.Message);
+                ShowSettingsError("沒有權限刪除應用", ex.Message);
+            }
+            catch (SecurityException ex)
+            {
+                ShowSettingsError("沒有權限刪除應用", ex.Message);
             }
             catch (InvalidOperationException ex)
             {
-                ShowSettingsError("無法啟動卸載程序", ex.Message);
+                ShowSettingsError("無法啟動刪除程序", ex.Message);
             }
             catch (System.ComponentModel.Win32Exception ex)
             {
-                ShowSettingsError("無法啟動卸載程序", ex.Message);
+                ShowSettingsError("無法啟動刪除程序", ex.Message);
+            }
+
+            if (!helperStarted && Directory.Exists(helperDirectory))
+            {
+                try
+                {
+                    Directory.Delete(helperDirectory, true);
+                }
+                catch (IOException ex)
+                {
+                    ShowSettingsError("無法清理刪除暫存檔", ex.Message);
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    ShowSettingsError("沒有權限清理刪除暫存檔", ex.Message);
+                }
+            }
+
+            if (startupDisabled)
+            {
+                try
+                {
+                    StartupSettings.SetEnabled(_settings.AutoStart);
+                }
+                catch (IOException ex)
+                {
+                    ShowSettingsError("無法還原開機啟動設定", ex.Message);
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    ShowSettingsError("沒有權限還原開機啟動設定", ex.Message);
+                }
+                catch (SecurityException ex)
+                {
+                    ShowSettingsError("沒有權限還原開機啟動設定", ex.Message);
+                }
             }
 
             return false;

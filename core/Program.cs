@@ -33,6 +33,42 @@ namespace MeoPet
         {
             if (args != null &&
                 args.Length == 3 &&
+                String.Equals(args[0], "--remove-app", StringComparison.Ordinal))
+            {
+                try
+                {
+                    AppRemovalService.RemoveAfterExit(args[1], args[2]);
+                }
+                catch (IOException ex)
+                {
+                    ShowRemovalError(ex.Message);
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    ShowRemovalError(ex.Message);
+                }
+                catch (InvalidDataException ex)
+                {
+                    ShowRemovalError(ex.Message);
+                }
+                catch (TimeoutException ex)
+                {
+                    ShowRemovalError(ex.Message);
+                }
+                catch (InvalidOperationException ex)
+                {
+                    ShowRemovalError(ex.Message);
+                }
+                catch (Win32Exception ex)
+                {
+                    ShowRemovalError(ex.Message);
+                }
+
+                return;
+            }
+
+            if (args != null &&
+                args.Length == 3 &&
                 String.Equals(args[0], "--apply-update", StringComparison.Ordinal))
             {
                 try
@@ -259,6 +295,15 @@ namespace MeoPet
             MessageBox.Show(
                 "無法完成 MeoPet 更新：" + Environment.NewLine + details,
                 "MeoPet 更新",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+        }
+
+        private static void ShowRemovalError(string details)
+        {
+            MessageBox.Show(
+                "無法將 MeoPet 移至資源回收筒：" + Environment.NewLine + details,
+                "刪除 MeoPet",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Error);
         }

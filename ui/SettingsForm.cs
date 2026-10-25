@@ -19,7 +19,8 @@ namespace MeoPet
     {
         private readonly PetSettings _settings;
         private readonly Func<PetSettings, bool> _applySettings;
-        private readonly Func<bool> _uninstall;
+        private readonly Func<bool> _clearData;
+        private readonly Func<bool> _deleteApplication;
         private readonly Func<string> _downloadUpdate;
         private readonly Func<string, bool> _startUpdate;
         private readonly Panel _page;
@@ -29,13 +30,15 @@ namespace MeoPet
         public SettingsForm(
             PetSettings settings,
             Func<PetSettings, bool> applySettings,
-            Func<bool> uninstall,
+            Func<bool> clearData,
+            Func<bool> deleteApplication,
             Func<string> downloadUpdate,
             Func<string, bool> startUpdate)
         {
             _settings = Copy(settings);
             _applySettings = applySettings;
-            _uninstall = uninstall;
+            _clearData = clearData;
+            _deleteApplication = deleteApplication;
             _downloadUpdate = downloadUpdate;
             _startUpdate = startUpdate;
 
@@ -365,13 +368,20 @@ namespace MeoPet
             update.Click += CheckForUpdates;
             _page.Controls.Add(update);
 
-            Button uninstall = new Button();
-            uninstall.Location = new Point(32, 330);
-            uninstall.Size = new Size(150, 36);
-            uninstall.Text = "卸載應用";
-            uninstall.ForeColor = Color.FromArgb(165, 62, 70);
-            uninstall.Click += UninstallApplication;
-            _page.Controls.Add(uninstall);
+            Button clearData = new Button();
+            clearData.Location = new Point(32, 330);
+            clearData.Size = new Size(150, 36);
+            clearData.Text = "清空資料";
+            clearData.Click += ClearApplicationData;
+            _page.Controls.Add(clearData);
+
+            Button deleteApplication = new Button();
+            deleteApplication.Location = new Point(32, 378);
+            deleteApplication.Size = new Size(150, 36);
+            deleteApplication.Text = "刪除應用";
+            deleteApplication.ForeColor = Color.FromArgb(165, 62, 70);
+            deleteApplication.Click += DeleteApplication;
+            _page.Controls.Add(deleteApplication);
         }
 
         private void CheckForUpdates(object sender, EventArgs e)
@@ -471,17 +481,44 @@ namespace MeoPet
             }
         }
 
-        private void UninstallApplication(object sender, EventArgs e)
+        private void ClearApplicationData(object sender, EventArgs e)
         {
             DialogResult answer = MessageBox.Show(
                 this,
-                "卸載後會刪除 AppData\\meopet 資料夾，其中的寵物名字與所有設定也會一併刪除。確定要卸載嗎？",
-                "卸載 MeoPet",
+                "這會清除寵物名字與設定，並關閉開機自動啟動；MeoPet 程式仍會保留。確定要清空資料嗎？",
+                "清空 MeoPet 資料",
                 MessageBoxButtons.YesNo,
                 MessageBoxIcon.Warning,
                 MessageBoxDefaultButton.Button2);
 
-            if (answer == DialogResult.Yes && _uninstall())
+            if (answer == DialogResult.Yes && _clearData())
+            {
+                Close();
+            }
+        }
+
+        private void DeleteApplication(object sender, EventArgs e)
+        {
+            DialogResult answer = MessageBox.Show(
+                this,
+                "這會將 AppData\\meopet 中的 MeoPet 程式與資料移至資源回收筒。確定要刪除應用嗎？",
+                "刪除 MeoPet",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning,
+                MessageBoxDefaultButton.Button2);
+            if (answer != DialogResult.Yes)
+            {
+                return;
+            }
+
+            MessageBox.Show(
+                this,
+                "您之後可隨時去 Github MeowStudio-Project 裡找 MeoPet 安裝回來！",
+                "MeoPet",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+
+            if (_deleteApplication())
             {
                 Close();
             }

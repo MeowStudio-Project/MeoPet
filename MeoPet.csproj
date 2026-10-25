@@ -29,6 +29,7 @@
     <Compile Include="core\Program.cs" />
     <Compile Include="models\PetSettings.cs" />
     <Compile Include="services\AppInstaller.cs" />
+    <Compile Include="services\AppRemovalService.cs" />
     <Compile Include="services\CpuUsageMonitor.cs" />
     <Compile Include="services\PetStorage.cs" />
     <Compile Include="services\SpeechContent.cs" />
