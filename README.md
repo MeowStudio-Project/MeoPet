@@ -48,20 +48,12 @@ $csc = "$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
   setup\Setup.cs services\AppInstaller.cs services\UpdateService.cs
 ```
 
-## 發布新版順序
+## FAQ
 
-1. 提高 `core\Program.cs` 的 `Program.Version`，並在本機以相同版本更新 `ver.json`。
-2. 建置 `MeoPet.exe` 與 `MeoPet.Setup.exe`。
-3. 建立 `MeoPet-<版本>.zip`，ZIP 根目錄只放 `MeoPet.exe` 和新版 `ver.json`。
-4. 將程式碼推送到 GitHub 預設分支，但先不要推送本機更新後的 `ver.json`；讓 GitHub 保留目前的舊版版本檔。
-5. 建立 `v<版本>` GitHub Release，上傳 `MeoPet-<版本>.zip` 與 `MeoPet.Setup.exe`，再發布 Release。
-6. 確認 ZIP 可下載後，再單獨提交並推送新版 `ver.json`，確認 `packageUrl` 與 Release 資產網址完全一致。
+1.
+Q: **為甚麼一開始就從1.1.2開始更新起?**
+A: **因為忘記用Git了**
 
-`ver.json` 格式範例：
-
-```json
-{
-  "version": "1.1.4",
-  "packageUrl": "https://github.com/MeowStudio-Project/MeoPet/releases/download/v1.1.4/MeoPet-1.1.4.zip"
-}
-```
+2.
+Q: **運作時會不會引響性能?**
+A: **不會**
