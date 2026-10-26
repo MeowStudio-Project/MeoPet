@@ -24,6 +24,7 @@ namespace MeoPet
         public int ShadowOpacity { get; set; }
         public bool AutoStart { get; set; }
         public bool SqueezeAtEdge { get; set; }
+        public bool SpeechMuted { get; set; }
 
         public PetSettings()
         {

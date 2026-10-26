@@ -5,6 +5,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Windows.Forms;
 
 namespace MeoPet
 {
@@ -34,6 +35,72 @@ namespace MeoPet
         [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
         private static extern int SHFileOperation(ref FileOperation operation);
 
+        public static void StartUninstall()
+        {
+            string installDirectory = Path.GetFullPath(AppInstaller.GetInstallDirectory())
+                .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            string installedExecutable = Path.Combine(installDirectory, "MeoPet.exe");
+            string currentExecutable = Path.GetFullPath(Application.ExecutablePath);
+            if (!String.Equals(
+                currentExecutable,
+                installedExecutable,
+                StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidDataException("只能從已安裝的 MeoPet 啟動解除安裝。");
+            }
+
+            string helperDirectory = Path.Combine(
+                Path.GetTempPath(),
+                "MeoPet-remove-" + Guid.NewGuid().ToString("N"));
+            bool ownsMutex = false;
+            bool helperStarted = false;
+            using (Mutex appMutex = new Mutex(false, MutexName))
+            {
+                try
+                {
+                    ownsMutex = appMutex.WaitOne(0);
+                }
+                catch (AbandonedMutexException)
+                {
+                    ownsMutex = true;
+                }
+
+                try
+                {
+                    Directory.CreateDirectory(helperDirectory);
+                    string helperExecutable = Path.Combine(helperDirectory, "MeoPetRemoval.exe");
+                    File.Copy(currentExecutable, helperExecutable, false);
+
+                    ProcessStartInfo removal = new ProcessStartInfo();
+                    removal.FileName = helperExecutable;
+                    removal.Arguments =
+                        "--remove-app \"" + installDirectory + "\" \"" + helperDirectory + "\"";
+                    removal.WorkingDirectory = helperDirectory;
+                    removal.UseShellExecute = true;
+                    using (Process started = Process.Start(removal))
+                    {
+                        if (started == null)
+                        {
+                            throw new InvalidOperationException("解除安裝輔助程序沒有成功啟動。");
+                        }
+                    }
+                    helperStarted = true;
+                }
+                finally
+                {
+                    if (ownsMutex)
+                    {
+                        appMutex.ReleaseMutex();
+                    }
+                }
+            }
+
+            if (!helperStarted && Directory.Exists(helperDirectory))
+            {
+                Directory.Delete(helperDirectory, true);
+            }
+        }
+
         public static void RemoveAfterExit(string installDirectory, string helperDirectory)
         {
             ValidateInstallDirectory(installDirectory);
@@ -57,6 +124,7 @@ namespace MeoPet
                 }
 
                 RemoveShortcut(installDirectory);
+                StartupSettings.SetEnabled(false);
                 MoveToRecycleBin(installDirectory);
                 if (Directory.Exists(installDirectory))
                 {
@@ -64,7 +132,14 @@ namespace MeoPet
                 }
             }
 
-            ScheduleHelperCleanup(helperDirectory);
+            try
+            {
+                AppInstaller.RemoveUninstallEntry();
+            }
+            finally
+            {
+                ScheduleHelperCleanup(helperDirectory);
+            }
         }
 
         private static void RemoveShortcut(string installDirectory)

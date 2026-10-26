@@ -17,7 +17,7 @@ namespace MeoPet
 {
     internal static class Program
     {
-        public const string Version = "1.1.4";
+        public const string Version = "1.1.5";
 
         private static readonly string NameFile = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -31,6 +31,54 @@ namespace MeoPet
         [STAThread]
         private static void Main(string[] args)
         {
+            if (args != null &&
+                args.Length == 1 &&
+                String.Equals(args[0], "--uninstall", StringComparison.Ordinal))
+            {
+                if (MessageBox.Show(
+                    "確定要解除安裝 MeoPet，並將程式與資料移至資源回收筒嗎？",
+                    "解除安裝 MeoPet",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Warning,
+                    MessageBoxDefaultButton.Button2) == DialogResult.Yes)
+                {
+                    try
+                    {
+                        AppRemovalService.StartUninstall();
+                    }
+                    catch (IOException ex)
+                    {
+                        ShowRemovalError(ex.Message);
+                    }
+                    catch (UnauthorizedAccessException ex)
+                    {
+                        ShowRemovalError(ex.Message);
+                    }
+                    catch (SecurityException ex)
+                    {
+                        ShowRemovalError(ex.Message);
+                    }
+                    catch (InvalidDataException ex)
+                    {
+                        ShowRemovalError(ex.Message);
+                    }
+                    catch (InvalidOperationException ex)
+                    {
+                        ShowRemovalError(ex.Message);
+                    }
+                    catch (ArgumentException ex)
+                    {
+                        ShowRemovalError(ex.Message);
+                    }
+                    catch (System.ComponentModel.Win32Exception ex)
+                    {
+                        ShowRemovalError(ex.Message);
+                    }
+                }
+
+                return;
+            }
+
             if (args != null &&
                 args.Length == 3 &&
                 String.Equals(args[0], "--remove-app", StringComparison.Ordinal))

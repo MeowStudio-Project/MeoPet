@@ -55,6 +55,7 @@ namespace MeoPet
                     MessageBoxButtons.YesNo,
                     MessageBoxIcon.Question) != DialogResult.Yes)
             {
+                RegisterUninstallEntry();
                 Close();
                 return;
             }
@@ -109,6 +110,8 @@ namespace MeoPet
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Information);
                 }
+
+                RegisterUninstallEntry();
 
                 try
                 {
@@ -166,6 +169,30 @@ namespace MeoPet
             worker.RunWorkerAsync();
         }
 
+        private void RegisterUninstallEntry()
+        {
+            try
+            {
+                AppInstaller.RegisterUninstallEntry();
+            }
+            catch (IOException ex)
+            {
+                ShowError("無法建立控制台解除安裝項目", ex.Message);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                ShowError("沒有權限建立控制台解除安裝項目", ex.Message);
+            }
+            catch (SecurityException ex)
+            {
+                ShowError("沒有權限建立控制台解除安裝項目", ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                ShowError("無法建立控制台解除安裝項目", ex.Message);
+            }
+        }
+
         private void CreateApplicationShortcut()
         {
             using (FolderBrowserDialog dialog = new FolderBrowserDialog())
@@ -198,30 +225,11 @@ namespace MeoPet
                         shell,
                         new object[] { shortcutPath });
                     Type shortcutType = shortcut.GetType();
-                    shortcutType.InvokeMember(
-                        "TargetPath",
-                        BindingFlags.SetProperty,
-                        null,
-                        shortcut,
-                        new object[] { Path.Combine(AppInstaller.GetInstallDirectory(), "MeoPet.exe") });
-                    shortcutType.InvokeMember(
-                        "WorkingDirectory",
-                        BindingFlags.SetProperty,
-                        null,
-                        shortcut,
-                        new object[] { AppInstaller.GetInstallDirectory() });
-                    shortcutType.InvokeMember(
-                        "IconLocation",
-                        BindingFlags.SetProperty,
-                        null,
-                        shortcut,
-                        new object[] { Path.Combine(AppInstaller.GetInstallDirectory(), "MeoPet.exe") + ",0" });
-                    shortcutType.InvokeMember(
-                        "Save",
-                        BindingFlags.InvokeMethod,
-                        null,
-                        shortcut,
-                        null);
+                    string executable = Path.Combine(AppInstaller.GetInstallDirectory(), "MeoPet.exe");
+                    SetShortcutProperty(shortcutType, shortcut, "TargetPath", executable);
+                    SetShortcutProperty(shortcutType, shortcut, "WorkingDirectory", AppInstaller.GetInstallDirectory());
+                    SetShortcutProperty(shortcutType, shortcut, "IconLocation", executable + ",0");
+                    shortcutType.InvokeMember("Save", BindingFlags.InvokeMethod, null, shortcut, null);
                     File.WriteAllText(
                         Path.Combine(AppInstaller.GetInstallDirectory(), "shortcut-location.txt"),
                         shortcutPath);
@@ -239,6 +247,20 @@ namespace MeoPet
                     }
                 }
             }
+        }
+
+        private static void SetShortcutProperty(
+            Type shortcutType,
+            object shortcut,
+            string propertyName,
+            object value)
+        {
+            shortcutType.InvokeMember(
+                propertyName,
+                BindingFlags.SetProperty,
+                null,
+                shortcut,
+                new[] { value });
         }
 
         private void ShowError(string title, string details)

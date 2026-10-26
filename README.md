@@ -6,14 +6,17 @@ MeoPet 是以 Windows Forms 與 .NET Framework 4 製作的 Windows 小桌面寵�
 
 從 GitHub Release 下載並執行 `MeoPet.Setup.exe`。
 
+- 請使用 `MeoPet.Setup.exe` 安裝；直接執行 ZIP 中的 `MeoPet.exe` 不會安裝或複製程式。
 - 若尚未安裝，安裝程式會下載最新版並安裝到 `%LOCALAPPDATA%\meopet`。
+- 安裝程式會將 MeoPet 登錄到目前使用者的 Windows「程式集」解除安裝清單，不需要系統管理員權限。
 - 若偵測到 `%LOCALAPPDATA%\meopet` 中已有 `MeoPet.exe`，會詢問是否檢查更新；只有資料殘留時會視為尚未安裝。
 - 已安裝版本若為最新版，安裝程式會告知並啟動現有程式。
 - 安裝完成後可選擇建立 MeoPet 捷徑的位置，預設為桌面；桌面顯示名稱為「MeoPet」。
 - 更新時請先退出正在執行的 MeoPet。
 - `idle` 與 CPU 提醒會等目前的說話泡泡結束後再顯示，避免打斷正在閱讀的訊息。
+- 右鍵選單提供使用說明與可保存的「禁止講話」切換；選單開啟時不會被背景台詞打斷。
 - 設定中的「清空資料」會清除寵物名字與偏好設定，但保留程式。
-- 「刪除應用」會移除 MeoPet 捷徑，並在退出後將 `%LOCALAPPDATA%\meopet` 移至資源回收筒。
+- 要解除安裝 MeoPet，請在 Windows「控制台 > 程式集 > 解除安裝程序」中移除；設定頁的刪除按鈕僅供說明。
 
 發布 ZIP 的根目錄必須包含：
 

@@ -78,6 +78,7 @@ namespace MeoPet
         private DateTime _nextSqueezeSpeechAt;
         private bool _pendingIdleSpeech;
         private bool _pendingCpuSpeech;
+        private bool _isContextMenuOpen;
         private bool _cpuWarningArmed = true;
 
         public PetForm(
@@ -115,15 +116,34 @@ namespace MeoPet
             ToolStripMenuItem settingsItem = new ToolStripMenuItem("設定");
             ToolStripMenuItem rename = new ToolStripMenuItem("重新命名");
             ToolStripMenuItem exit = new ToolStripMenuItem("退出應用");
+            ToolStripMenuItem help = new ToolStripMenuItem("說明和使用");
+            ToolStripMenuItem muteSpeech = new ToolStripMenuItem("禁止講話");
+            muteSpeech.CheckOnClick = true;
+            muteSpeech.Checked = _settings.SpeechMuted;
             settingsItem.Click += OpenSettings;
             rename.Click += RenamePet;
             exit.Click += delegate { Close(); };
+            help.Click += ShowHelp;
+            muteSpeech.Click += ToggleSpeechMute;
             options.DropDownItems.Add(settingsItem);
-            options.DropDownItems.Add(new ToolStripSeparator());
             options.DropDownItems.Add(rename);
             options.DropDownItems.Add(new ToolStripSeparator());
             options.DropDownItems.Add(exit);
             menu.Items.Add(options);
+            menu.Items.Add(help);
+            menu.Items.Add(muteSpeech);
+            menu.Opening += delegate
+            {
+                _isContextMenuOpen = true;
+            };
+            menu.Closed += delegate
+            {
+                _isContextMenuOpen = false;
+                if (_pendingIdleSpeech || _pendingCpuSpeech)
+                {
+                    _deferredAmbientTimer.Start();
+                }
+            };
             ContextMenuStrip = menu;
 
             MouseDown += StartDrag;
@@ -188,6 +208,11 @@ namespace MeoPet
 
         private void ShowSpeech(string category)
         {
+            if (_settings.SpeechMuted)
+            {
+                return;
+            }
+
             SpeechLine line = _speechContent.GetRandomLine(category);
             SetExpression(line.Expression, 6000);
             SpeechBubbleForm bubble = new SpeechBubbleForm();
@@ -215,7 +240,7 @@ namespace MeoPet
             _chatTimer.Stop();
             _chatTimer.Interval = _chatRandom.Next(35000, 70001);
             _chatTimer.Start();
-            if (_isDragging || HasVisibleSpeechBubbles())
+            if (_isContextMenuOpen || _isDragging || HasVisibleSpeechBubbles())
             {
                 _pendingIdleSpeech = true;
                 _deferredAmbientTimer.Start();
@@ -233,7 +258,7 @@ namespace MeoPet
                 return;
             }
 
-            if (_isDragging || HasVisibleSpeechBubbles())
+            if (_isContextMenuOpen || _isDragging || HasVisibleSpeechBubbles())
             {
                 return;
             }
@@ -292,7 +317,7 @@ namespace MeoPet
                 else if (usage > 90F && _cpuWarningArmed)
                 {
                     _cpuWarningArmed = false;
-                    if (_isDragging || HasVisibleSpeechBubbles())
+                    if (_isContextMenuOpen || _isDragging || HasVisibleSpeechBubbles())
                     {
                         _pendingCpuSpeech = true;
                         _deferredAmbientTimer.Start();
@@ -961,7 +986,6 @@ namespace MeoPet
                     _settings,
                     ApplySettings,
                     ClearApplicationData,
-                    DeleteApplication,
                     DownloadUpdate,
                     StartUpdate);
             }
@@ -973,6 +997,54 @@ namespace MeoPet
 
             _settingsWindow.WindowState = FormWindowState.Normal;
             _settingsWindow.BringToFront();
+        }
+
+        private void ShowHelp(object sender, EventArgs e)
+        {
+            MessageBox.Show(
+                this,
+                "MeoPet 使用說明" + Environment.NewLine + Environment.NewLine +
+                "• 按住寵物並拖曳，可以移動牠。" + Environment.NewLine +
+                "• 快速點擊寵物，牠會做出反應並說話。" + Environment.NewLine +
+                "• 快速大力來回晃動寵物，牠會感到頭暈。" + Environment.NewLine +
+                "• 在寵物上按右鍵，可開啟本選單。" + Environment.NewLine +
+                "• 從「選項」可開啟設定、重新命名或退出應用。" + Environment.NewLine +
+                "• 選取「禁止講話」可切換是否顯示對話。" + Environment.NewLine +
+                "• 需要關閉 MeoPet 時，請用右鍵選單中的「選項」→「退出應用」。",
+                "說明＆使用",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+        }
+
+        private void ToggleSpeechMute(object sender, EventArgs e)
+        {
+            ToolStripMenuItem item = (ToolStripMenuItem)sender;
+            PetSettings changed = new PetSettings
+            {
+                Width = _settings.Width,
+                Height = _settings.Height,
+                BodyColorArgb = _settings.BodyColorArgb,
+                ShadowColorArgb = _settings.ShadowColorArgb,
+                ShadowOpacity = _settings.ShadowOpacity,
+                AutoStart = _settings.AutoStart,
+                SqueezeAtEdge = _settings.SqueezeAtEdge,
+                SpeechMuted = item.Checked
+            };
+
+            if (!ApplySettings(changed))
+            {
+                item.Checked = !item.Checked;
+            }
+            else if (item.Checked)
+            {
+                foreach (SpeechBubbleForm bubble in _speechBubbles.ToArray())
+                {
+                    if (!bubble.IsDisposed)
+                    {
+                        bubble.Close();
+                    }
+                }
+            }
         }
 
         private string DownloadUpdate()
@@ -1101,108 +1173,6 @@ namespace MeoPet
             catch (SecurityException ex)
             {
                 ShowSettingsError("沒有權限清空資料", ex.Message);
-            }
-
-            return false;
-        }
-
-        private bool DeleteApplication()
-        {
-            string installDirectory = Path.GetFullPath(AppInstaller.GetInstallDirectory());
-            string helperDirectory = Path.Combine(
-                Path.GetTempPath(),
-                "MeoPet-remove-" + Guid.NewGuid().ToString("N"));
-            bool startupDisabled = false;
-            bool helperStarted = false;
-
-            try
-            {
-                if (!String.Equals(
-                    installDirectory.TrimEnd(Path.DirectorySeparatorChar),
-                    Path.GetFullPath(Path.Combine(
-                        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                        "meopet")).TrimEnd(Path.DirectorySeparatorChar),
-                    StringComparison.OrdinalIgnoreCase))
-                {
-                    ShowSettingsError("無法刪除應用", "刪除路徑驗證失敗，未移動任何檔案。");
-                    return false;
-                }
-
-                StartupSettings.SetEnabled(false);
-                startupDisabled = true;
-                Directory.CreateDirectory(helperDirectory);
-                string helperExecutable = Path.Combine(helperDirectory, "MeoPetRemoval.exe");
-                File.Copy(Application.ExecutablePath, helperExecutable);
-
-                ProcessStartInfo removal = new ProcessStartInfo();
-                removal.FileName = helperExecutable;
-                removal.Arguments = "--remove-app \"" + installDirectory + "\" \"" + helperDirectory + "\"";
-                removal.WorkingDirectory = helperDirectory;
-                removal.UseShellExecute = true;
-                if (Process.Start(removal) == null)
-                {
-                    throw new InvalidOperationException("刪除輔助程序沒有成功啟動。");
-                }
-
-                helperStarted = true;
-                BeginInvoke((MethodInvoker)delegate { Application.Exit(); });
-                return true;
-            }
-            catch (IOException ex)
-            {
-                ShowSettingsError("無法刪除應用", ex.Message);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                ShowSettingsError("沒有權限刪除應用", ex.Message);
-            }
-            catch (SecurityException ex)
-            {
-                ShowSettingsError("沒有權限刪除應用", ex.Message);
-            }
-            catch (InvalidOperationException ex)
-            {
-                ShowSettingsError("無法啟動刪除程序", ex.Message);
-            }
-            catch (System.ComponentModel.Win32Exception ex)
-            {
-                ShowSettingsError("無法啟動刪除程序", ex.Message);
-            }
-
-            if (!helperStarted && Directory.Exists(helperDirectory))
-            {
-                try
-                {
-                    Directory.Delete(helperDirectory, true);
-                }
-                catch (IOException ex)
-                {
-                    ShowSettingsError("無法清理刪除暫存檔", ex.Message);
-                }
-                catch (UnauthorizedAccessException ex)
-                {
-                    ShowSettingsError("沒有權限清理刪除暫存檔", ex.Message);
-                }
-            }
-
-            if (startupDisabled)
-            {
-                try
-                {
-                    StartupSettings.SetEnabled(_settings.AutoStart);
-                }
-                catch (IOException ex)
-                {
-                    ShowSettingsError("無法還原開機啟動設定", ex.Message);
-                }
-                catch (UnauthorizedAccessException ex)
-                {
-                    ShowSettingsError("沒有權限還原開機啟動設定", ex.Message);
-                }
-                catch (SecurityException ex)
-                {
-                    ShowSettingsError("沒有權限還原開機啟動設定", ex.Message);
-                }
             }
 
             return false;
