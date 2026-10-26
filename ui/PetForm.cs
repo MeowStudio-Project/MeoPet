@@ -1011,7 +1011,7 @@ namespace MeoPet
                 "• 從「選項」可開啟設定、重新命名或退出應用。" + Environment.NewLine +
                 "• 選取「禁止講話」可切換是否顯示對話。" + Environment.NewLine +
                 "• 需要關閉 MeoPet 時，請用右鍵選單中的「選項」→「退出應用」。",
-                "說明＆使用",
+                "說明和使用",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
         }
